@@ -24,31 +24,26 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todo.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-class Todo(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100))
-    complete = db.Column(db.Boolean, default=False)
-    due_date = db.Column(db.Date)
-    priority = db.Column(db.String(10))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # <-- NEW LINE
+
 
 class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(200))
-    todos = db.relationship('Todo', backref='user', lazy=True)  # <-- Optional, for ORM access
-
-class User(db.Model, UserMixin):
+    __tablename__ = 'user'
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
+    todos = db.relationship('Todo', backref='user', lazy=True)
 
 class Todo(db.Model):
+    __tablename__ = 'todo'
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100))
-    complete = db.Column(db.Boolean)
-    due_date = db.Column(db.String(10))     # ✅ must be present
-    priority = db.Column(db.String(10))     # ✅ must be present
+    complete = db.Column(db.Boolean, default=False)
+    due_date = db.Column(db.String(10))
+    priority = db.Column(db.String(10))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 @app.route('/register', methods=['GET', 'POST'])
