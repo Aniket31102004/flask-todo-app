@@ -3,6 +3,11 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from flask_login import UserMixin
+from your_app import db
+
+
+
 
 app = Flask(__name__)
 app.secret_key = 'your_super_secret_key_123'
@@ -18,6 +23,20 @@ def load_user(user_id):
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todo.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+class Todo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100))
+    complete = db.Column(db.Boolean, default=False)
+    due_date = db.Column(db.Date)
+    priority = db.Column(db.String(10))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # <-- NEW LINE
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(200))
+    todos = db.relationship('Todo', backref='user', lazy=True)  # <-- Optional, for ORM access
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -76,31 +95,25 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/')
+@app.route("/")
 @login_required
-def home():
+def index():
     todo_list = Todo.query.filter_by(user_id=current_user.id).all()
-    return render_template('index.html', todo_list=todo_list)
+    return render_template("index.html", todo_list=todo_list)
 
 
-@app.route('/add', methods=['POST'])
+
+@app.route("/add", methods=["POST"])
 @login_required
 def add():
-    title = request.form.get('title')
-    due_date = request.form.get('due_date')
-    priority = request.form.get('priority')
-
-    new_task = Todo(
-        title=title,
-        due_date=due_date,
-        priority=priority,
-        complete=False,
-        user_id=current_user.id  # 🔑 Important!
-    )
-
+    title = request.form.get("title")
+    due_date = request.form.get("due_date")
+    priority = request.form.get("priority")
+    
+    new_task = Todo(title=title, complete=False, due_date=due_date, priority=priority, user_id=current_user.id)
     db.session.add(new_task)
     db.session.commit()
-    return redirect(url_for('home'))
+    return redirect(url_for("index"))
 
 
 @app.route('/update/<int:todo_id>')
@@ -123,6 +136,8 @@ def clear_completed():
     Todo.query.filter_by(complete=True, user_id=current_user.id).delete()
     db.session.commit()
     return redirect(url_for('home'))
+
+
 
 
 
