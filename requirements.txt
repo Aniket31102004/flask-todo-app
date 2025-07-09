@@ -1,6 +1,5 @@
-dnspython==2.7.0
-email_validator==2.2.0
-idna==3.10
-package_name==0.1
+Flask
 gunicorn
-
+flask_sqlalchemy
+flask_login
+email_validator
